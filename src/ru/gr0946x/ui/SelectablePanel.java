@@ -13,6 +13,9 @@ public class SelectablePanel extends PaintPanel{
     private Graphics g;
 
     private Point rightButtonStartPos = null;
+    private Point rightButtonCurrentPos = null;
+    private boolean isRightDragging = false;
+
     private final Converter converter;
 
     private final ArrayList<SelectListener> selectHandlers = new ArrayList<>();
@@ -63,6 +66,8 @@ public class SelectablePanel extends PaintPanel{
                     paintSelectedRect();
                 } else if (e.getButton() == MouseEvent.BUTTON3) {
                     rightButtonStartPos = new Point(e.getX(), e.getY());
+                    rightButtonCurrentPos = new Point(e.getX(), e.getY());
+                    isRightDragging = true;
                 }
             }
 
@@ -82,12 +87,23 @@ public class SelectablePanel extends PaintPanel{
                         rect = null;
                     }
                 } else if (e.getButton() == MouseEvent.BUTTON3 && rightButtonStartPos != null) {
+                    isRightDragging = false;
+                    // Стираем линию
+                    if (g != null && rightButtonStartPos != null && rightButtonCurrentPos != null) {
+                        g.setXORMode(Color.BLACK);
+                        g.setColor(Color.WHITE);
+                        g.drawLine(rightButtonStartPos.x, rightButtonStartPos.y,
+                                rightButtonCurrentPos.x, rightButtonCurrentPos.y);
+                        g.setPaintMode();
+                    }
+
                     int deltaX = e.getX() - rightButtonStartPos.x;
                     int deltaY = e.getY() - rightButtonStartPos.y;
                     if (deltaX != 0 || deltaY != 0) {
                         shiftFractal(deltaX, deltaY);
                     }
                     rightButtonStartPos = null;
+                    rightButtonCurrentPos = null;
                 }
             }
         });
@@ -101,6 +117,25 @@ public class SelectablePanel extends PaintPanel{
                         rect.setLastPoint(e.getX(), e.getY());
                     }
                     paintSelectedRect();
+                } else if (SwingUtilities.isRightMouseButton(e) && isRightDragging) {
+                    // Стираем старую линию
+                    if (g != null && rightButtonStartPos != null && rightButtonCurrentPos != null) {
+                        g.setXORMode(Color.BLACK);
+                        g.setColor(Color.WHITE);
+                        g.drawLine(rightButtonStartPos.x, rightButtonStartPos.y,
+                                rightButtonCurrentPos.x, rightButtonCurrentPos.y);
+                        g.setPaintMode();
+                    }
+
+                    // Рисуем новую линию
+                    rightButtonCurrentPos = new Point(e.getX(), e.getY());
+                    if (g != null && rightButtonStartPos != null) {
+                        g.setXORMode(Color.BLACK);
+                        g.setColor(Color.WHITE);
+                        g.drawLine(rightButtonStartPos.x, rightButtonStartPos.y,
+                                rightButtonCurrentPos.x, rightButtonCurrentPos.y);
+                        g.setPaintMode();
+                    }
                 }
             }
         });
