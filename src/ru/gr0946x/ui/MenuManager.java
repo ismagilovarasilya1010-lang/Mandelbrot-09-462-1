@@ -1,18 +1,32 @@
 package ru.gr0946x.ui;
+
 import ru.gr0946x.ui.painting.FractalPainter;
+import ru.gr0946x.ui.fractals.FractalSession;
+import ru.gr0946x.ui.fractals.Fractal;
+import ru.gr0946x.ui.fractals.Julia;
+import ru.gr0946x.ui.fractals.Mandelbrot;
+import ru.smak.math.Complex;
+
 import javax.swing.*;
-import java.awt.event.ActionEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.*;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 import javax.imageio.ImageIO;
-import java.awt.Graphics2D;
-import java.awt.Color;
+
 public class MenuManager {
     private final FractalPainter painter;
-    public MenuManager(FractalPainter painter) {
+    private final Component panel;  // ← Добавлено поле
+
+    public MenuManager(FractalPainter painter, Component panel) {
         this.painter = painter;
+        this.panel = panel;
     }
+
     public JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
@@ -23,13 +37,13 @@ public class MenuManager {
         fileMenu.add(saveItem);
 
         JMenuItem saveFracItem = new JMenuItem("Сохранить как FRAC...");
-        saveFracItem.addActionListener(this::showNotImplementedMessage);
+        saveFracItem.addActionListener(e -> saveFractal());  // ← ИСПРАВЛЕНО
         fileMenu.add(saveFracItem);
 
         fileMenu.addSeparator();
 
         JMenuItem openFracItem = new JMenuItem("Открыть FRAC...");
-        openFracItem.addActionListener(this::showNotImplementedMessage);
+        openFracItem.addActionListener(e -> openFractal());  // ← ИСПРАВЛЕНО
         fileMenu.add(openFracItem);
 
         menuBar.add(fileMenu);
@@ -113,6 +127,7 @@ public class MenuManager {
                 JOptionPane.INFORMATION_MESSAGE
         );
     }
+
     private void saveImage(String format) {
         System.out.println("SAVE CLICKED " + format);
         JFileChooser chooser = new JFileChooser();
@@ -199,7 +214,136 @@ public class MenuManager {
             }
         }
     }
+
     private void saveImageWithChoice() {
         saveImage(null);
     }
-}
+
+    // === ВСПОМОГАТЕЛЬНЫЙ МЕТОД: авто-добавление расширения ===
+    private File ensureExtension(File file, String expectedExt) {
+        String name = file.getName().toLowerCase();
+        if (!name.endsWith("." + expectedExt.toLowerCase())) {
+            return new File(file.getParentFile(), file.getName() + "." + expectedExt);
+        }
+        return file;
+    }
+
+    // === СОХРАНЕНИЕ ФРАКТАЛА ===
+    private void saveFractal() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Сохранить фрактал");
+
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Файл фрактала (*.frac)", "frac");
+        chooser.addChoosableFileFilter(filter);
+        chooser.setFileFilter(filter);
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File file = ensureExtension(chooser.getSelectedFile(), "frac");
+
+            try {
+                FractalSession session = new FractalSession();
+                session.xMin = painter.getConverter().getXMin();
+                session.xMax = painter.getConverter().getXMax();
+                session.yMin = painter.getConverter().getYMin();
+                session.yMax = painter.getConverter().getYMax();
+
+                Field fractalField = FractalPainter.class.getDeclaredField("fractal");
+                fractalField.setAccessible(true);
+                Fractal currentFractal = (Fractal) fractalField.get(painter);
+
+                if (currentFractal instanceof Julia) {
+                    session.type = "julia";
+                    Field cField = Julia.class.getDeclaredField("c");
+                    cField.setAccessible(true);
+                    Complex c = (Complex) cField.get(currentFractal);
+                    session.juliaCRe = c.getReal();
+                    session.juliaCIm = c.getImaginary();
+                } else {
+                    session.type = "mandelbrot";
+                }
+
+                try (PrintWriter out = new PrintWriter(new OutputStreamWriter(
+                        new FileOutputStream(file), StandardCharsets.UTF_8))) {
+                    out.println("# Fractal Session v1.0");
+                    out.println("type=" + session.type);
+                    out.println("xMin=" + session.xMin);
+                    out.println("xMax=" + session.xMax);
+                    out.println("yMin=" + session.yMin);
+                    out.println("yMax=" + session.yMax);
+                    if (session.juliaCRe != null) {
+                        out.println("juliaCRe=" + session.juliaCRe);
+                        out.println("juliaCIm=" + session.juliaCIm);
+                    }
+                }
+
+                JOptionPane.showMessageDialog(null, "Фрактал сохранён: " + file.getName());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null,
+                        "Ошибка сохранения: " + e.getMessage(),
+                        "Ошибка", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    // === ОТКРЫТИЕ ФРАКТАЛА ===
+    private void openFractal() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("Открыть фрактал");
+
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("Файл фрактала (*.frac)", "frac");
+        chooser.addChoosableFileFilter(filter);
+        chooser.setFileFilter(filter);
+        chooser.setAcceptAllFileFilterUsed(false);
+
+        if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+
+            try {
+                Properties props = new Properties();
+                try (InputStream in = new FileInputStream(file)) {
+                    props.load(in);
+                }
+
+                double xMin = Double.parseDouble(props.getProperty("xMin"));
+                double xMax = Double.parseDouble(props.getProperty("xMax"));
+                double yMin = Double.parseDouble(props.getProperty("yMin"));
+                double yMax = Double.parseDouble(props.getProperty("yMax"));
+
+                // Обновляем координаты и перерисовываем панель
+                SwingUtilities.invokeLater(() -> {
+                    painter.getConverter().setXShape(xMin, xMax);
+                    painter.getConverter().setYShape(yMin, yMax);
+
+                    if (panel != null) {
+                        panel.repaint();
+                    }
+                });
+
+                String type = props.getProperty("type");
+                if ("julia".equals(type)) {
+                    String cRe = props.getProperty("juliaCRe");
+                    String cIm = props.getProperty("juliaCIm");
+                    if (cRe != null && cIm != null) {
+                        Complex newC = new Complex(Double.parseDouble(cRe), Double.parseDouble(cIm));
+                        Julia newJulia = new Julia(newC);
+
+                        Field fractalField = FractalPainter.class.getDeclaredField("fractal");
+                        fractalField.setAccessible(true);
+                        fractalField.set(painter, newJulia);
+                    }
+                }
+
+                JOptionPane.showMessageDialog(null, "Фрактал загружен: " + file.getName());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null,
+                        "Ошибка чтения файла: " + e.getMessage(),
+                        "Ошибка", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+}  // ← Закрывающая скобка класса

@@ -80,7 +80,7 @@ public class MainWindow extends JFrame {
             }
         });
 
-        menuManager = new MenuManager((FractalPainter) painter);
+        menuManager = new MenuManager((FractalPainter) painter, mainPanel);
         setJMenuBar(menuManager.createMenuBar());
 
         setContent();
