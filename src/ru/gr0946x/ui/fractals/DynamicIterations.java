@@ -3,7 +3,7 @@ package ru.gr0946x.ui.fractals;
 public class DynamicIterations {
     private static final double BASE_ITERATIONS = 100.0;
     private static final int MIN_ITERATIONS = 50;
-    private static final int MAX_ITERATIONS = 2000;
+    private static final int MAX_ITERATIONS = 1000;
 
     private boolean enabled = false;
     private double lastWidth = 4.0;

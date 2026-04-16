@@ -25,6 +25,7 @@ public class MainWindow extends JFrame {
     private final Converter conv;
     private final MenuManager menuManager;
     private final DynamicIterations dynamicIter;
+    private JuliaWindow juliaWindow = null;
 
     private Point mousePressPoint = null;
 
@@ -76,13 +77,17 @@ public class MainWindow extends JFrame {
             public void mouseReleased(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1 && mousePressPoint != null) {
                     double dist = e.getPoint().distance(mousePressPoint);
-                    if (dist < 5) { // Клик (выделение не производилось)
+                    if (dist < 5) {
                         double cX = conv.xScr2Crt(e.getX());
                         double cY = conv.yScr2Crt(e.getY());
                         Complex c = new Complex(cX, cY);
 
                         SwingUtilities.invokeLater(() -> {
-                            JuliaWindow juliaWindow = new JuliaWindow(c, "Множество Жюлиа");
+                            // ИСПРАВЛЕНО: закрыть старое окно, если существует
+                            if (juliaWindow != null && juliaWindow.isDisplayable()) {
+                                juliaWindow.dispose();
+                            }
+                            juliaWindow = new JuliaWindow(c, "Множество Жюлиа");
                             juliaWindow.setSize(800, 650);
                             juliaWindow.setLocationRelativeTo(MainWindow.this);
                             juliaWindow.setVisible(true);

@@ -9,6 +9,10 @@ public class Julia extends Mandelbrot {
         this.c = c;
     }
 
+    public void setDynamicIterations(DynamicIterations di) {
+        super.setDynamicIterations(di);
+    }
+
     @Override
     public float inSetProbability(double x, double y) {
         var z = new Complex(x, y);
