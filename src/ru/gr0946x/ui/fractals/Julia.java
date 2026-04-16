@@ -5,22 +5,25 @@ import ru.smak.math.Complex;
 public class Julia extends Mandelbrot {
     private final Complex c;
 
-    private final int maxIterations = 100;
-    private final double R2 = 4;
-
     public Julia(Complex c) {
         this.c = c;
     }
 
+    public void setDynamicIterations(DynamicIterations di) {
+        super.setDynamicIterations(di);
+    }
+
     @Override
     public float inSetProbability(double x, double y) {
-
         var z = new Complex(x, y);
+
+        int currentMax = getCurrentMaxIterations();
+
         int i = 0;
-        while (z.getAbsoluteValue2() < R2 && ++i < maxIterations) {
-            z.timesAssign(z);      // z = z^2
-            z.plusAssign(c);       // z = z^2 + c
+        while (z.getAbsoluteValue2() < 4 && ++i < currentMax) {
+            z.timesAssign(z);
+            z.plusAssign(c);
         }
-        return (float) i / maxIterations;
+        return (float) i / currentMax;
     }
 }

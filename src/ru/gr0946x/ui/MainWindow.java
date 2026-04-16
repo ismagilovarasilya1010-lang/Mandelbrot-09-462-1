@@ -1,6 +1,7 @@
 package ru.gr0946x.ui;
 
 import ru.gr0946x.Converter;
+import ru.gr0946x.ui.fractals.DynamicIterations;
 import ru.gr0946x.ui.fractals.Fractal;
 import ru.gr0946x.ui.fractals.Mandelbrot;
 import ru.gr0946x.ui.painting.FractalPainter;
@@ -23,6 +24,8 @@ public class MainWindow extends JFrame {
     private final Fractal mandelbrot;
     private final Converter conv;
     private final MenuManager menuManager;
+    private final DynamicIterations dynamicIter;
+    private JuliaWindow juliaWindow = null;
 
     private Point mousePressPoint = null;
 
@@ -34,7 +37,12 @@ public class MainWindow extends JFrame {
         setMinimumSize(new Dimension(800, 650));
         setTitle("Фрактал Множество Мандельброта");
 
-        mandelbrot = new Mandelbrot();
+        dynamicIter = new DynamicIterations();
+
+        Mandelbrot mandelbrotImpl = new Mandelbrot();
+        mandelbrotImpl.setDynamicIterations(dynamicIter);
+        mandelbrot = mandelbrotImpl;
+
         conv = new Converter(-2.0, 1.0, -1.0, 1.0);
         painter = new FractalPainter(mandelbrot, conv, (value) -> {
             if (value == 1.0) return Color.BLACK;
@@ -47,6 +55,8 @@ public class MainWindow extends JFrame {
         mainPanel = new SelectablePanel(painter, conv);
         mainPanel.setBackground(Color.WHITE);
 
+        mainPanel.setDynamicIterations(dynamicIter);
+
         mainPanel.addSelectListener((r) -> {
             var xMin = conv.xScr2Crt(r.x);
             var xMax = conv.xScr2Crt(r.x + r.width);
@@ -55,7 +65,6 @@ public class MainWindow extends JFrame {
             mainPanel.applyZoom(xMin, xMax, yMin, yMax);
         });
 
-        // 🔍 Отслеживание клика для открытия окна Жюлиа
         mainPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -68,13 +77,17 @@ public class MainWindow extends JFrame {
             public void mouseReleased(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1 && mousePressPoint != null) {
                     double dist = e.getPoint().distance(mousePressPoint);
-                    if (dist < 5) { // Клик (выделение не производилось)
+                    if (dist < 5) {
                         double cX = conv.xScr2Crt(e.getX());
                         double cY = conv.yScr2Crt(e.getY());
                         Complex c = new Complex(cX, cY);
 
                         SwingUtilities.invokeLater(() -> {
-                            JuliaWindow juliaWindow = new JuliaWindow(c, "Множество Жюлиа");
+                            // ИСПРАВЛЕНО: закрыть старое окно, если существует
+                            if (juliaWindow != null && juliaWindow.isDisplayable()) {
+                                juliaWindow.dispose();
+                            }
+                            juliaWindow = new JuliaWindow(c, "Множество Жюлиа");
                             juliaWindow.setSize(800, 650);
                             juliaWindow.setLocationRelativeTo(MainWindow.this);
                             juliaWindow.setVisible(true);
@@ -87,6 +100,26 @@ public class MainWindow extends JFrame {
 
         menuManager = new MenuManager((FractalPainter) painter, mainPanel, this);
         setJMenuBar(menuManager.createMenuBar());
+
+        JMenu viewMenu = null;
+        for (int i = 0; i < getJMenuBar().getMenuCount(); i++) {
+            JMenu menu = getJMenuBar().getMenu(i);
+            if (menu.getText().equals("Вид")) {
+                viewMenu = menu;
+                break;
+            }
+        }
+
+        if (viewMenu != null) {
+            viewMenu.addSeparator();
+            JCheckBoxMenuItem dynamicIterItem = new JCheckBoxMenuItem("Динамическое число итераций");
+            dynamicIterItem.addActionListener(e -> {
+                boolean enabled = dynamicIterItem.isSelected();
+                dynamicIter.setEnabled(enabled);
+                mainPanel.repaint();
+            });
+            viewMenu.add(dynamicIterItem);
+        }
 
         setContent();
 

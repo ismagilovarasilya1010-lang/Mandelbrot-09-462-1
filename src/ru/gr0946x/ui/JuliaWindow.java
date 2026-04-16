@@ -1,6 +1,7 @@
 package ru.gr0946x.ui;
 
 import ru.gr0946x.Converter;
+import ru.gr0946x.ui.fractals.DynamicIterations;
 import ru.gr0946x.ui.fractals.Julia;
 import ru.gr0946x.ui.painting.FractalPainter;
 import ru.smak.math.Complex;
@@ -9,14 +10,19 @@ import javax.swing.*;
 import java.awt.*;
 
 public class JuliaWindow extends JFrame {
+    private final DynamicIterations dynamicIter;  // ДОБАВИТЬ
 
     public JuliaWindow(Complex c, String title) {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setMinimumSize(new Dimension(800, 650));
         setTitle(title + " (c = " + String.format("%.3f", c.getReal()) + " + " + String.format("%.3f", c.getImaginary()) + "i)");
 
+        dynamicIter = new DynamicIterations();  // ДОБАВИТЬ
+
         Converter conv = new Converter(-2.0, 1.0, -1.0, 1.0);
         var julia = new Julia(c);
+        julia.setDynamicIterations(dynamicIter);  // ДОБАВИТЬ
+
         var painter = new FractalPainter(julia, conv, (value) -> {
             if (value == 1.0) return Color.BLACK;
             var r = (float) Math.abs(Math.sin(5 * value));
@@ -27,6 +33,7 @@ public class JuliaWindow extends JFrame {
 
         SelectablePanel juliaPanel = new SelectablePanel(painter, conv);
         juliaPanel.setBackground(Color.WHITE);
+        juliaPanel.setDynamicIterations(dynamicIter);  // ДОБАВИТЬ
 
         juliaPanel.addSelectListener((r) -> {
             var xMin = conv.xScr2Crt(r.x);

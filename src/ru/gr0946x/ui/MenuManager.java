@@ -100,6 +100,7 @@ public class MenuManager {
 
         viewMenu.add(formulaMenu);
         viewMenu.add(colorSchemeMenu);
+
         menuBar.add(viewMenu);
 
         JMenu fractalMenu = new JMenu("Фрактал");
