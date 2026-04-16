@@ -7,6 +7,8 @@ import ru.gr0946x.ui.fractals.Mandelbrot;
 import ru.gr0946x.ui.painting.FractalPainter;
 import ru.gr0946x.ui.painting.Painter;
 import ru.smak.math.Complex;
+import ru.gr0946x.ui.fractals.FractalConfig;
+import ru.gr0946x.ui.fractals.ColorFunction;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,13 +20,16 @@ import static java.lang.Math.*;
 public class MainWindow extends JFrame {
 
     private final SelectablePanel mainPanel;
-    private final Painter painter;
-    private final Mandelbrot mandelbrot;
+    private Painter painter;
+    private final Fractal mandelbrot;
     private final Converter conv;
     private final MenuManager menuManager;
     private final DynamicIterations dynamicIter;
 
     private Point mousePressPoint = null;
+
+    private int currentFractalIdx = 0;
+    private int currentColorIdx = 0;
 
     public MainWindow() {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -88,7 +93,7 @@ public class MainWindow extends JFrame {
             }
         });
 
-        menuManager = new MenuManager((FractalPainter) painter);
+        menuManager = new MenuManager((FractalPainter) painter, mainPanel, this);
         setJMenuBar(menuManager.createMenuBar());
 
         JMenu viewMenu = null;
@@ -115,6 +120,23 @@ public class MainWindow extends JFrame {
 
         SwingUtilities.invokeLater(() -> mainPanel.repaint());
     }
+
+    public void applySettings(int fIdx, int cIdx) {
+        this.currentFractalIdx = fIdx;
+        this.currentColorIdx = cIdx;
+
+        Fractal f = FractalConfig.FRACTALS.get(fIdx);
+        ColorFunction c = FractalConfig.COLORS.get(cIdx);
+
+        painter = new FractalPainter(f, conv, c);
+
+        if (mainPanel != null) {
+            mainPanel.setPainter(painter);
+        }
+    }
+
+    public int getCurrentFractalIdx() { return currentFractalIdx; }
+    public int getCurrentColorIdx() { return currentColorIdx; }
 
     private void setContent() {
         var gl = new GroupLayout(getContentPane());
