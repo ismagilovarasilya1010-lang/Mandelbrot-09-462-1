@@ -1,18 +1,27 @@
 package ru.gr0946x.ui;
+
 import ru.gr0946x.ui.painting.FractalPainter;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
 import java.awt.Graphics2D;
 import java.awt.Color;
+
 public class MenuManager {
     private final FractalPainter painter;
-    public MenuManager(FractalPainter painter) {
+    private final SelectablePanel panel;
+
+    public MenuManager(FractalPainter painter, SelectablePanel panel) {
         this.painter = painter;
+        this.panel = panel;
     }
+
     public JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
@@ -37,11 +46,13 @@ public class MenuManager {
         JMenu editMenu = new JMenu("Правка");
 
         JMenuItem undoItem = new JMenuItem("Отменить");
-        undoItem.addActionListener(this::showNotImplementedMessage);
+        undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK));
+        undoItem.addActionListener(e -> panel.undo());
         editMenu.add(undoItem);
 
         JMenuItem redoItem = new JMenuItem("Повторить");
-        redoItem.addActionListener(this::showNotImplementedMessage);
+        redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
+        redoItem.addActionListener(e -> panel.redo());
         editMenu.add(redoItem);
 
         menuBar.add(editMenu);
@@ -113,6 +124,7 @@ public class MenuManager {
                 JOptionPane.INFORMATION_MESSAGE
         );
     }
+
     private void saveImage(String format) {
         System.out.println("SAVE CLICKED " + format);
         JFileChooser chooser = new JFileChooser();
@@ -199,6 +211,7 @@ public class MenuManager {
             }
         }
     }
+
     private void saveImageWithChoice() {
         saveImage(null);
     }
