@@ -20,7 +20,7 @@ import javax.imageio.ImageIO;
 
 public class MenuManager {
     private final FractalPainter painter;
-    private final Component panel;  // ← Добавлено поле
+    private final Component panel;
 
     public MenuManager(FractalPainter painter, Component panel) {
         this.painter = painter;
@@ -37,13 +37,13 @@ public class MenuManager {
         fileMenu.add(saveItem);
 
         JMenuItem saveFracItem = new JMenuItem("Сохранить как FRAC...");
-        saveFracItem.addActionListener(e -> saveFractal());  // ← ИСПРАВЛЕНО
+        saveFracItem.addActionListener(e -> saveFractal());
         fileMenu.add(saveFracItem);
 
         fileMenu.addSeparator();
 
         JMenuItem openFracItem = new JMenuItem("Открыть FRAC...");
-        openFracItem.addActionListener(e -> openFractal());  // ← ИСПРАВЛЕНО
+        openFracItem.addActionListener(e -> openFractal());
         fileMenu.add(openFracItem);
 
         menuBar.add(fileMenu);
@@ -219,7 +219,6 @@ public class MenuManager {
         saveImage(null);
     }
 
-    // === ВСПОМОГАТЕЛЬНЫЙ МЕТОД: авто-добавление расширения ===
     private File ensureExtension(File file, String expectedExt) {
         String name = file.getName().toLowerCase();
         if (!name.endsWith("." + expectedExt.toLowerCase())) {
@@ -228,7 +227,6 @@ public class MenuManager {
         return file;
     }
 
-    // === СОХРАНЕНИЕ ФРАКТАЛА ===
     private void saveFractal() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Сохранить фрактал");
@@ -288,7 +286,6 @@ public class MenuManager {
         }
     }
 
-    // === ОТКРЫТИЕ ФРАКТАЛА ===
     private void openFractal() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Открыть фрактал");
@@ -312,7 +309,6 @@ public class MenuManager {
                 double yMin = Double.parseDouble(props.getProperty("yMin"));
                 double yMax = Double.parseDouble(props.getProperty("yMax"));
 
-                // Обновляем координаты и перерисовываем панель
                 SwingUtilities.invokeLater(() -> {
                     painter.getConverter().setXShape(xMin, xMax);
                     painter.getConverter().setYShape(yMin, yMax);
@@ -346,4 +342,4 @@ public class MenuManager {
             }
         }
     }
-}  // ← Закрывающая скобка класса
+}
