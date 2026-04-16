@@ -245,4 +245,15 @@ public class SelectablePanel extends PaintPanel{
             g.setPaintMode();
         }
     }
+    public void setPainter(Painter p) {
+        this.painter = p;
+
+        if (p instanceof ru.gr0946x.ui.painting.FractalPainter) {
+            p.setWidth(getWidth());
+            p.setHeight(getHeight());
+        }
+        repaint();
+    }
+
+
 }

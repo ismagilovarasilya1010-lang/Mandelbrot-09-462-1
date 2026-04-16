@@ -9,9 +9,9 @@ import java.awt.*;
 
 public class FractalPainter implements Painter{
 
-    private final Fractal fractal;
+    private Fractal fractal;
     private final Converter conv;
-    private final ColorFunction colorFunction;
+    private ColorFunction colorFunction;
     @Override
     public int getWidth() {
         return conv.getWidth();
@@ -52,6 +52,7 @@ public class FractalPainter implements Painter{
             }
         }
     }
+
     public BufferedImage createImage() {
         int w = getWidth();
         int h = getHeight();
@@ -75,4 +76,7 @@ public class FractalPainter implements Painter{
     public Converter getConverter() {
         return conv;
     }
+    public void setFractal(Fractal fractal) { this.fractal = fractal; }
+    public void setColorFunction(ColorFunction colorFunction) { this.colorFunction = colorFunction; }
+
 }
