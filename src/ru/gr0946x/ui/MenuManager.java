@@ -1,5 +1,4 @@
 package ru.gr0946x.ui;
-
 import ru.gr0946x.ui.painting.FractalPainter;
 import ru.gr0946x.ui.fractals.FractalSession;
 import ru.gr0946x.ui.fractals.Fractal;
@@ -8,111 +7,110 @@ import ru.gr0946x.ui.fractals.Mandelbrot;
 import ru.smak.math.Complex;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.util.Properties;
+import java.io.File;
 import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.Color;
+import ru.gr0946x.ui.fractals.FractalConfig;
 
 public class MenuManager {
     private final FractalPainter painter;
-    private final Component panel;
+    private final SelectablePanel panel;
+    private final MainWindow mainWindow;
+    private boolean juliaMode = false;
 
-    public MenuManager(FractalPainter painter, Component panel) {
+    public MenuManager(FractalPainter painter, SelectablePanel panel, MainWindow mainWindow) {
         this.painter = painter;
         this.panel = panel;
+        this.mainWindow = mainWindow;
+        this.juliaMode = (mainWindow == null);
+    }
+
+    public void setJuliaMode(boolean juliaMode) {
+        this.juliaMode = juliaMode;
     }
 
     public JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu fileMenu = new JMenu("Файл");
-
         JMenuItem saveItem = new JMenuItem("Сохранить как...");
         saveItem.addActionListener(e -> saveImageWithChoice());
         fileMenu.add(saveItem);
-
-        JMenuItem saveFracItem = new JMenuItem("Сохранить как FRAC...");
-        saveFracItem.addActionListener(e -> saveFractal());
-        fileMenu.add(saveFracItem);
-
-        fileMenu.addSeparator();
-
-        JMenuItem openFracItem = new JMenuItem("Открыть FRAC...");
-        openFracItem.addActionListener(e -> openFractal());
-        fileMenu.add(openFracItem);
-
         menuBar.add(fileMenu);
 
         JMenu editMenu = new JMenu("Правка");
-
         JMenuItem undoItem = new JMenuItem("Отменить");
-        undoItem.addActionListener(this::showNotImplementedMessage);
+        undoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK));
+        undoItem.addActionListener(e -> panel.undo());
         editMenu.add(undoItem);
-
         JMenuItem redoItem = new JMenuItem("Повторить");
-        redoItem.addActionListener(this::showNotImplementedMessage);
+        redoItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
+        redoItem.addActionListener(e -> panel.redo());
         editMenu.add(redoItem);
-
         menuBar.add(editMenu);
 
         JMenu viewMenu = new JMenu("Вид");
 
-        JMenu formulaMenu = new JMenu("Формулы для построения");
+        if (!juliaMode) {
+            JMenu formulaMenu = new JMenu("Формулы для построения");
+            ButtonGroup formulaGroup = new ButtonGroup();
 
-        ButtonGroup formulaGroup = new ButtonGroup();
-        JRadioButtonMenuItem formula1 = new JRadioButtonMenuItem("Формула RGB 1 (sin/cos)");
-        JRadioButtonMenuItem formula2 = new JRadioButtonMenuItem("Формула RGB 2");
-        JRadioButtonMenuItem formula3 = new JRadioButtonMenuItem("Формула RGB 3");
-
-        formula1.setSelected(true);
-        formula1.addActionListener(this::showNotImplementedMessage);
-        formula2.addActionListener(this::showNotImplementedMessage);
-        formula3.addActionListener(this::showNotImplementedMessage);
-
-        formulaGroup.add(formula1);
-        formulaGroup.add(formula2);
-        formulaGroup.add(formula3);
-
-        formulaMenu.add(formula1);
-        formulaMenu.add(formula2);
-        formulaMenu.add(formula3);
+            for (int i = 0; i < FractalConfig.FRACTAL_NAMES.size(); i++) {
+                JRadioButtonMenuItem item = new JRadioButtonMenuItem(FractalConfig.FRACTAL_NAMES.get(i));
+                final int idx = i;
+                item.addActionListener(e -> {
+                    if (item.isSelected() && mainWindow != null) {
+                        mainWindow.applySettings(idx, mainWindow.getCurrentColorIdx());
+                    }
+                });
+                formulaGroup.add(item);
+                formulaMenu.add(item);
+            }
+            if (formulaGroup.getButtonCount() > 0) {
+                formulaGroup.getElements().nextElement().setSelected(true);
+            }
+            viewMenu.add(formulaMenu);
+        }
 
         JMenu colorSchemeMenu = new JMenu("Цветовая схема");
-
         ButtonGroup schemeGroup = new ButtonGroup();
-        JRadioButtonMenuItem scheme1 = new JRadioButtonMenuItem("Схема 1 (по умолчанию)");
-        JRadioButtonMenuItem scheme2 = new JRadioButtonMenuItem("Схема 2");
-        JRadioButtonMenuItem scheme3 = new JRadioButtonMenuItem("Схема 3");
 
-        scheme1.setSelected(true);
-        scheme1.addActionListener(this::showNotImplementedMessage);
-        scheme2.addActionListener(this::showNotImplementedMessage);
-        scheme3.addActionListener(this::showNotImplementedMessage);
+        for (int i = 0; i < FractalConfig.COLOR_NAMES.size(); i++) {
+            JRadioButtonMenuItem item = new JRadioButtonMenuItem(FractalConfig.COLOR_NAMES.get(i));
+            final int idx = i;
 
-        schemeGroup.add(scheme1);
-        schemeGroup.add(scheme2);
-        schemeGroup.add(scheme3);
+            item.addActionListener(e -> {
+                if (item.isSelected()) {
+                    if (juliaMode) {
+                        painter.setColorFunction(FractalConfig.COLORS.get(idx));
+                        panel.repaint();
+                    } else {
+                        mainWindow.applySettings(mainWindow.getCurrentFractalIdx(), idx);
+                    }
+                }
+            });
 
-        colorSchemeMenu.add(scheme1);
-        colorSchemeMenu.add(scheme2);
-        colorSchemeMenu.add(scheme3);
-
-        viewMenu.add(formulaMenu);
+            schemeGroup.add(item);
+            colorSchemeMenu.add(item);
+        }
+        if (schemeGroup.getButtonCount() > 0) {
+            schemeGroup.getElements().nextElement().setSelected(true);
+        }
         viewMenu.add(colorSchemeMenu);
-
         menuBar.add(viewMenu);
 
         JMenu fractalMenu = new JMenu("Фрактал");
-
         JMenuItem tourItem = new JMenuItem("Экскурсия по фракталу");
         tourItem.addActionListener(this::showNotImplementedMessage);
         fractalMenu.add(tourItem);
-
         menuBar.add(fractalMenu);
 
         return menuBar;
@@ -127,7 +125,6 @@ public class MenuManager {
                 JOptionPane.INFORMATION_MESSAGE
         );
     }
-
     private void saveImage(String format) {
         System.out.println("SAVE CLICKED " + format);
         JFileChooser chooser = new JFileChooser();
@@ -214,7 +211,6 @@ public class MenuManager {
             }
         }
     }
-
     private void saveImageWithChoice() {
         saveImage(null);
     }

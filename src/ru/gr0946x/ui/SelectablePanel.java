@@ -1,6 +1,7 @@
 package ru.gr0946x.ui;
 
 import ru.gr0946x.Converter;
+import ru.gr0946x.ui.fractals.DynamicIterations;
 import ru.gr0946x.ui.painting.Painter;
 
 import javax.swing.*;
@@ -19,6 +20,8 @@ public class SelectablePanel extends PaintPanel {
     private boolean isRightDragging = false;
 
     private final Converter converter;
+
+    private DynamicIterations dynamicIterations;
 
     private final ArrayList<SelectListener> selectHandlers = new ArrayList<>();
 
@@ -47,14 +50,16 @@ public class SelectablePanel extends PaintPanel {
         double yMax;
         double width;
         double height;
+        double viewWidth;
 
-        ViewState(double xMin, double xMax, double yMin, double yMax, double width, double height) {
+        ViewState(double xMin, double xMax, double yMin, double yMax, double width, double height, double viewWidth) {
             this.xMin = xMin;
             this.xMax = xMax;
             this.yMin = yMin;
             this.yMax = yMax;
             this.width = width;
             this.height = height;
+            this.viewWidth = viewWidth;
         }
     }
 
@@ -62,14 +67,13 @@ public class SelectablePanel extends PaintPanel {
         selectHandlers.add(listener);
     }
 
-    public void removeSelectListener(SelectListener listener) {
-        selectHandlers.remove(listener);
+    public void setDynamicIterations(DynamicIterations di) {
+        this.dynamicIterations = di;
     }
 
     public SelectablePanel(Painter painter, Converter converter) {
         super(painter);
         this.converter = converter;
-
         this.origXMin = converter.getXMin();
         this.origXMax = converter.getXMax();
         this.origYMin = converter.getYMin();
@@ -101,7 +105,6 @@ public class SelectablePanel extends PaintPanel {
             public void mouseReleased(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     paintSelectedRect();
-
                     if (rect != null) {
                         for (var handler : selectHandlers) {
                             handler.onSelect(new Rectangle(
@@ -130,11 +133,9 @@ public class SelectablePanel extends PaintPanel {
 
                     int deltaX = e.getX() - rightButtonStartPos.x;
                     int deltaY = e.getY() - rightButtonStartPos.y;
-
                     if (deltaX != 0 || deltaY != 0) {
                         shiftFractal(deltaX, deltaY);
                     }
-
                     rightButtonStartPos = null;
                     rightButtonCurrentPos = null;
                 }
@@ -146,7 +147,7 @@ public class SelectablePanel extends PaintPanel {
             public void mouseDragged(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
                     paintSelectedRect();
-                    if (rect != null) {
+                    if (rect != null){
                         rect.setLastPoint(e.getX(), e.getY());
                     }
                     paintSelectedRect();
@@ -164,7 +165,6 @@ public class SelectablePanel extends PaintPanel {
                     }
 
                     rightButtonCurrentPos = new Point(e.getX(), e.getY());
-
                     if (g != null && rightButtonStartPos != null) {
                         g.setXORMode(Color.BLACK);
                         g.setColor(Color.WHITE);
@@ -192,12 +192,9 @@ public class SelectablePanel extends PaintPanel {
 
     private ViewState createCurrentState() {
         return new ViewState(
-                currentXMin,
-                currentXMax,
-                currentYMin,
-                currentYMax,
-                currentWidth,
-                currentHeight
+                currentXMin, currentXMax, currentYMin, currentYMax,
+                currentWidth, currentHeight,
+                currentXMax - currentXMin
         );
     }
 
@@ -214,15 +211,16 @@ public class SelectablePanel extends PaintPanel {
     }
 
     private void restoreState(ViewState state) {
-        currentXMin = state.xMin;
-        currentXMax = state.xMax;
-        currentYMin = state.yMin;
-        currentYMax = state.yMax;
-        currentWidth = state.width;
-        currentHeight = state.height;
+        currentXMin = state.xMin; currentXMax = state.xMax;
+        currentYMin = state.yMin; currentYMax = state.yMax;
+        currentWidth = state.width; currentHeight = state.height;
 
         converter.setXShape(currentXMin, currentXMax);
         converter.setYShape(currentYMin, currentYMax);
+
+        if (dynamicIterations != null) {
+            dynamicIterations.setLastWidth(state.viewWidth);
+        }
 
         adjustBoundsForAspectRatio();
         repaint();
@@ -306,16 +304,19 @@ public class SelectablePanel extends PaintPanel {
     public void applyZoom(double xMin, double xMax, double yMin, double yMax) {
         saveStateForUndo();
 
+        if (dynamicIterations != null) {
+            double newWidth = xMax - xMin;
+            dynamicIterations.updateAndGetIterations(newWidth);
+        }
+
         converter.setXShape(xMin, xMax);
         converter.setYShape(yMin, yMax);
-
         currentXMin = xMin;
         currentXMax = xMax;
         currentYMin = yMin;
         currentYMax = yMax;
         currentWidth = xMax - xMin;
         currentHeight = yMax - yMin;
-
         adjustBoundsForAspectRatio();
         repaint();
     }
@@ -327,13 +328,11 @@ public class SelectablePanel extends PaintPanel {
         double xMax = converter.xScr2Crt(getWidth());
         double yMin = converter.yScr2Crt(getHeight());
         double yMax = converter.yScr2Crt(0);
-
         double width = xMax - xMin;
         double height = yMax - yMin;
 
         double shiftX = (deltaX * width) / getWidth();
         double shiftY = (deltaY * height) / getHeight();
-
         converter.setXShape(xMin - shiftX, xMax - shiftX);
         converter.setYShape(yMin + shiftY, yMax + shiftY);
 
@@ -341,6 +340,11 @@ public class SelectablePanel extends PaintPanel {
         currentXMax = xMax - shiftX;
         currentYMin = yMin + shiftY;
         currentYMax = yMax + shiftY;
+
+        if (dynamicIterations != null) {
+            double newWidth = currentXMax - currentXMin;
+            dynamicIterations.updateAndGetIterations(newWidth);
+        }
 
         repaint();
     }
@@ -367,6 +371,4 @@ public class SelectablePanel extends PaintPanel {
         }
         repaint();
     }
-
-
 }

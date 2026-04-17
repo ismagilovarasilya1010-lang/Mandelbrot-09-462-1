@@ -58,7 +58,6 @@ public class FractalPainter implements Painter{
         int h = getHeight();
 
         BufferedImage result = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-        Graphics2D resultG = result.createGraphics();
 
         int procs = Runtime.getRuntime().availableProcessors();
         Thread[] threads = new Thread[procs];
@@ -66,23 +65,15 @@ public class FractalPainter implements Painter{
         for (int k = 0; k < procs; k++) {
             final int threadId = k;
 
-            BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-            Graphics2D g = bi.createGraphics();
-
             threads[k] = new Thread(() -> {
                 for (int i = threadId; i < w; i += procs) {
                     for (int j = 0; j < h; j++) {
                         var x = conv.xScr2Crt(i);
                         var y = conv.yScr2Crt(j);
                         var res = fractal.inSetProbability(x, y);
-                        g.setColor(colorFunction.getColor(res));
-                        g.fillRect(i, j, 1, 1);
+                        Color color = colorFunction.getColor(res);
+                        result.setRGB(i, j, color.getRGB());
                     }
-                }
-                g.dispose();
-
-                synchronized (resultG) {
-                    resultG.drawImage(bi, 0, 0, null);
                 }
             });
             threads[k].start();
@@ -96,13 +87,11 @@ public class FractalPainter implements Painter{
             }
         }
 
-        resultG.dispose();
         return result;
     }
+
     public Converter getConverter() {
         return conv;
     }
-    public void setFractal(Fractal fractal) { this.fractal = fractal; }
     public void setColorFunction(ColorFunction colorFunction) { this.colorFunction = colorFunction; }
-
 }
