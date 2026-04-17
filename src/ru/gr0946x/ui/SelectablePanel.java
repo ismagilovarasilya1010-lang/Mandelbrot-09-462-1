@@ -21,7 +21,7 @@ public class SelectablePanel extends PaintPanel {
 
     private final Converter converter;
 
-    private DynamicIterations dynamicIterations;  // ← ДОБАВЛЕНО
+    private DynamicIterations dynamicIterations;
 
     private final ArrayList<SelectListener> selectHandlers = new ArrayList<>();
 
@@ -50,14 +50,16 @@ public class SelectablePanel extends PaintPanel {
         double yMax;
         double width;
         double height;
+        double viewWidth;
 
-        ViewState(double xMin, double xMax, double yMin, double yMax, double width, double height) {
+        ViewState(double xMin, double xMax, double yMin, double yMax, double width, double height, double viewWidth) {
             this.xMin = xMin;
             this.xMax = xMax;
             this.yMin = yMin;
             this.yMax = yMax;
             this.width = width;
             this.height = height;
+            this.viewWidth = viewWidth;
         }
     }
 
@@ -65,11 +67,6 @@ public class SelectablePanel extends PaintPanel {
         selectHandlers.add(listener);
     }
 
-    public void removeSelectListener(SelectListener listener) {
-        selectHandlers.remove(listener);
-    }
-
-    // ← ДОБАВЛЕНО: метод для установки DynamicIterations
     public void setDynamicIterations(DynamicIterations di) {
         this.dynamicIterations = di;
     }
@@ -195,12 +192,9 @@ public class SelectablePanel extends PaintPanel {
 
     private ViewState createCurrentState() {
         return new ViewState(
-                currentXMin,
-                currentXMax,
-                currentYMin,
-                currentYMax,
-                currentWidth,
-                currentHeight
+                currentXMin, currentXMax, currentYMin, currentYMax,
+                currentWidth, currentHeight,
+                currentXMax - currentXMin
         );
     }
 
@@ -217,15 +211,16 @@ public class SelectablePanel extends PaintPanel {
     }
 
     private void restoreState(ViewState state) {
-        currentXMin = state.xMin;
-        currentXMax = state.xMax;
-        currentYMin = state.yMin;
-        currentYMax = state.yMax;
-        currentWidth = state.width;
-        currentHeight = state.height;
+        currentXMin = state.xMin; currentXMax = state.xMax;
+        currentYMin = state.yMin; currentYMax = state.yMax;
+        currentWidth = state.width; currentHeight = state.height;
 
         converter.setXShape(currentXMin, currentXMax);
         converter.setYShape(currentYMin, currentYMax);
+
+        if (dynamicIterations != null) {
+            dynamicIterations.setLastWidth(state.viewWidth);
+        }
 
         adjustBoundsForAspectRatio();
         repaint();
@@ -376,6 +371,4 @@ public class SelectablePanel extends PaintPanel {
         }
         repaint();
     }
-
-
 }

@@ -11,13 +11,27 @@ public class FractalConfig {
     public static final List<String> COLOR_NAMES = new ArrayList<>();
     public static final List<ColorFunction> COLORS = new ArrayList<>();
 
+    private static DynamicIterations dynamicIterations = null;
+
+    public static void setDynamicIterations(DynamicIterations di) {
+        dynamicIterations = di;
+    }
+
+    private static int getMaxIterations() {
+        if (dynamicIterations != null && dynamicIterations.isEnabled()) {
+            return dynamicIterations.getCurrentIterations();
+        }
+        return 100;
+    }
+
     static {
         FRACTAL_NAMES.add("Формула 1 (Классика z^2+c)");
         FRACTALS.add(new Mandelbrot());
 
         FRACTAL_NAMES.add("Формула 2 (Куб z^3+c)");
         FRACTALS.add((x, y) -> {
-            int m = 100; double r2 = 4, zx = x, zy = y, i = 0;
+            int m = getMaxIterations();
+            double r2 = 4, zx = x, zy = y, i = 0;
             while (zx*zx + zy*zy < r2 && ++i < m) {
                 double t = zx*zx*zx - 3*zx*zy*zy + x;
                 zy = 3*zx*zx*zy - zy*zy*zy + y; zx = t;
@@ -26,7 +40,8 @@ public class FractalConfig {
 
         FRACTAL_NAMES.add("Формула 3 (Со смещением)");
         FRACTALS.add((x, y) -> {
-            int m = 100; double r2 = 4, zx = x, zy = y, i = 0;
+            int m = getMaxIterations();
+            double r2 = 4, zx = x, zy = y, i = 0;
             while (zx*zx + zy*zy < r2 && ++i < m) {
                 double t = zx*zx - zy*zy + x + 0.5;
                 zy = 2*zx*zy + y + 0.3; zx = t;
@@ -35,7 +50,8 @@ public class FractalConfig {
 
         FRACTAL_NAMES.add("Формула 4 (Степень 4)");
         FRACTALS.add((x, y) -> {
-            int m = 100; double r2 = 16, zx = x, zy = y, i = 0;
+            int m = getMaxIterations();
+            double r2 = 16, zx = x, zy = y, i = 0;
             while (zx*zx + zy*zy < r2 && ++i < m) {
                 double a = zx*zx, b = zy*zy, t = a*a - 6*a*b + b*b + x;
                 zy = 4*zx*a*zy - 4*zx*zy*b + y; zx = t;
@@ -44,7 +60,8 @@ public class FractalConfig {
 
         FRACTAL_NAMES.add("Формула 5 (Модифицированная)");
         FRACTALS.add((x, y) -> {
-            int m = 100; double r2 = 4, zx = x, zy = y, i = 0;
+            int m = getMaxIterations();
+            double r2 = 4, zx = x, zy = y, i = 0;
             while (zx*zx + zy*zy < r2 && ++i < m) {
                 double abs = Math.sqrt(zx*zx + zy*zy);
                 double t = zx*zx - zy*zy + x + 0.1*abs;

@@ -11,10 +11,6 @@ public class Mandelbrot implements Fractal {
 
     private DynamicIterations dynamicIterations = null;
 
-    public double getR(){
-        return sqrt(R2);
-    }
-
     public void setDynamicIterations(DynamicIterations di) {
         this.dynamicIterations = di;
     }
@@ -24,10 +20,6 @@ public class Mandelbrot implements Fractal {
             return dynamicIterations.getCurrentIterations();
         }
         return maxIterations;
-    }
-
-    public void setMaxIterations(int iterations) {
-        this.maxIterations = iterations;
     }
 
     @Override

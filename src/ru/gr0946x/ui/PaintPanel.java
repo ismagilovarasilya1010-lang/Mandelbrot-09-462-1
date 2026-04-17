@@ -28,6 +28,4 @@ public class PaintPanel extends JPanel {
         super.paint(g);
         painter.paint(g);
     }
-
-
 }

@@ -58,6 +58,10 @@ public class MainWindow extends JFrame {
         mainPanel.setDynamicIterations(dynamicIter);
 
         mainPanel.addSelectListener((r) -> {
+            if (r.width < 10 || r.height < 10) {
+                return;
+            }
+
             var xMin = conv.xScr2Crt(r.x);
             var xMax = conv.xScr2Crt(r.x + r.width);
             var yMin = conv.yScr2Crt(r.y + r.height);
@@ -83,11 +87,10 @@ public class MainWindow extends JFrame {
                         Complex c = new Complex(cX, cY);
 
                         SwingUtilities.invokeLater(() -> {
-                            // ИСПРАВЛЕНО: закрыть старое окно, если существует
                             if (juliaWindow != null && juliaWindow.isDisplayable()) {
                                 juliaWindow.dispose();
                             }
-                            juliaWindow = new JuliaWindow(c, "Множество Жюлиа");
+                            juliaWindow = new JuliaWindow(c, "Множество Жюлиа", dynamicIter);
                             juliaWindow.setSize(800, 650);
                             juliaWindow.setLocationRelativeTo(MainWindow.this);
                             juliaWindow.setVisible(true);
@@ -130,8 +133,14 @@ public class MainWindow extends JFrame {
         this.currentFractalIdx = fIdx;
         this.currentColorIdx = cIdx;
 
+        FractalConfig.setDynamicIterations(dynamicIter);
+
         Fractal f = FractalConfig.FRACTALS.get(fIdx);
         ColorFunction c = FractalConfig.COLORS.get(cIdx);
+
+        if (f instanceof Mandelbrot) {
+            ((Mandelbrot) f).setDynamicIterations(dynamicIter);
+        }
 
         painter = new FractalPainter(f, conv, c);
 
