@@ -1,6 +1,5 @@
 package ru.gr0946x.ui.painting;
 import java.awt.image.BufferedImage;
-import java.awt.Graphics2D;
 import ru.gr0946x.Converter;
 import ru.gr0946x.ui.fractals.ColorFunction;
 import ru.gr0946x.ui.fractals.Fractal;
@@ -94,4 +93,9 @@ public class FractalPainter implements Painter{
         return conv;
     }
     public void setColorFunction(ColorFunction colorFunction) { this.colorFunction = colorFunction; }
+    public Fractal getFractal() { return fractal; }
+    public ColorFunction getColorFunction() { return colorFunction; }
+    public void setFractal(Fractal fractal) {
+        this.fractal = fractal;
+    }
 }

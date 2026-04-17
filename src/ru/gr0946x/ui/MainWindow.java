@@ -1,14 +1,10 @@
 package ru.gr0946x.ui;
 
 import ru.gr0946x.Converter;
-import ru.gr0946x.ui.fractals.DynamicIterations;
-import ru.gr0946x.ui.fractals.Fractal;
-import ru.gr0946x.ui.fractals.Mandelbrot;
+import ru.gr0946x.ui.fractals.*;
 import ru.gr0946x.ui.painting.FractalPainter;
 import ru.gr0946x.ui.painting.Painter;
 import ru.smak.math.Complex;
-import ru.gr0946x.ui.fractals.FractalConfig;
-import ru.gr0946x.ui.fractals.ColorFunction;
 
 import javax.swing.*;
 import java.awt.*;
@@ -165,5 +161,31 @@ public class MainWindow extends JFrame {
                 .addComponent(mainPanel, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE)
                 .addGap(8)
         );
+    }
+
+    public void restoreFromSession(FractalSession session) {
+        if (session == null) return;
+
+        conv.setXShape(session.xMin, session.xMax);
+        conv.setYShape(session.yMin, session.yMax);
+
+        applySettings(session.fractalIdx, session.colorIdx);
+
+        if (mainPanel instanceof SelectablePanel) {
+            try {
+                java.lang.reflect.Field diField = SelectablePanel.class.getDeclaredField("dynamicIterations");
+                diField.setAccessible(true);
+                ru.gr0946x.ui.fractals.DynamicIterations di =
+                        (ru.gr0946x.ui.fractals.DynamicIterations) diField.get(mainPanel);
+                if (di != null) {
+                    di.setEnabled(session.dynamicIterationsEnabled);
+                    di.syncLastWidth(session.dynamicIterationsLastWidth);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        mainPanel.repaint();
     }
 }
